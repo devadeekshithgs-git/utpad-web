@@ -105,4 +105,4 @@ app.post('/api/v1/auth/sync/events', (req: Request, res: Response) => {
     res.json({ syncedCount: req.body.events?.length || 0, conflicts: [] });
 });
 
-export default app;
+module.exports = app;
