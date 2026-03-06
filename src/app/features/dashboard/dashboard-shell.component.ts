@@ -125,6 +125,9 @@ export class DashboardShellComponent {
 
   navItems: NavItem[] = [
     { label: 'Command Center', icon: 'dashboard', route: 'command-center' },
+    { label: 'Kanban Board', icon: 'view_kanban', route: 'kanban' },
+    { label: 'Traceability', icon: 'account_tree', route: 'traceability' },
+    { label: 'Alerts', icon: 'notifications_active', route: 'alerts' },
     { label: 'Recipes', icon: 'science', route: 'recipes' },
     { label: 'Inwarding', icon: 'inventory', route: 'inwarding' },
     { label: 'Production', icon: 'precision_manufacturing', route: 'production' },
@@ -136,10 +139,10 @@ export class DashboardShellComponent {
 
   mobileNavItems: NavItem[] = [
     { label: 'Center', icon: 'dashboard', route: 'command-center' },
-    { label: 'Recipes', icon: 'science', route: 'recipes' },
+    { label: 'Kanban', icon: 'view_kanban', route: 'kanban' },
+    { label: 'Trace', icon: 'account_tree', route: 'traceability' },
+    { label: 'Alerts', icon: 'notifications_active', route: 'alerts' },
     { label: 'Inward', icon: 'inventory', route: 'inwarding' },
-    { label: 'Pack', icon: 'inventory_2', route: 'packing' },
-    { label: 'Dispatch', icon: 'local_shipping', route: 'dispatch' },
     { label: 'Users', icon: 'group', route: 'users' },
   ];
 
