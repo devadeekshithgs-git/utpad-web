@@ -14,6 +14,11 @@ interface BomLine {
   qty: number;
 }
 
+interface ExistingRecipeOption {
+  id: string;
+  label: string;
+}
+
 @Component({
   selector: 'app-recipes-admin',
   standalone: true,
@@ -62,89 +67,55 @@ interface BomLine {
           </div>
 
           <div class="px-6 pb-6 pt-4 space-y-5">
-            <!-- Toggle: Create New / Select Existing -->
-            <div class="flex rounded-lg border border-gray-200 overflow-hidden w-fit">
-              <button
-                type="button"
-                (click)="flavorMode.set('create')"
-                class="px-5 py-2.5 text-sm font-semibold transition-colors"
-                [class]="flavorMode() === 'create' ? 'bg-orange-50 text-orange-600 border-r border-gray-200' : 'bg-white text-gray-500 border-r border-gray-200 hover:bg-gray-50'">
-                Create New
-              </button>
-              <button
-                type="button"
-                (click)="flavorMode.set('select')"
-                class="px-5 py-2.5 text-sm font-semibold transition-colors"
-                [class]="flavorMode() === 'select' ? 'bg-orange-50 text-orange-600' : 'bg-white text-gray-500 hover:bg-gray-50'">
-                Select Existing
-              </button>
+            <!-- Select Existing Recipe -->
+            <div>
+              <label class="block text-sm font-semibold text-[#1e293b] mb-2">Select Existing Recipe</label>
+              <div class="relative">
+                <select
+                  [formControl]="selectedRecipeControl"
+                  (change)="onExistingRecipeSelected()"
+                  class="block w-full rounded-lg border border-gray-200 bg-gray-50 text-sm text-[#1e293b] py-3 pl-10 pr-10 appearance-none focus:ring-2 focus:ring-orange-300 focus:border-orange-400 transition">
+                  <option value="">Search existing recipes (e.g. Spearmint, Lemon Ice)...</option>
+                  @for (recipeOption of existingRecipeOptions(); track recipeOption.id) {
+                    <option [value]="recipeOption.id">{{ recipeOption.label }}</option>
+                  }
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+                  <span class="material-icons-round text-lg">search</span>
+                </div>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400">
+                  <span class="material-icons-round text-lg">expand_more</span>
+                </div>
+              </div>
             </div>
 
-            @if (flavorMode() === 'select') {
-              <!-- Select Existing Flavor -->
-              <div>
-                <label class="block text-sm font-semibold text-[#1e293b] mb-2">Select Existing Flavor</label>
-                <div class="relative">
-                  <select
-                    [formControl]="selectedFlavorControl"
-                    (change)="onExistingFlavorSelected()"
-                    class="block w-full rounded-lg border border-gray-200 bg-gray-50 text-sm text-[#1e293b] py-3 pl-10 pr-10 appearance-none focus:ring-2 focus:ring-orange-300 focus:border-orange-400 transition">
-                    <option value="">Search existing flavors (e.g. Spearmint, Lemon Ice)...</option>
-                    @for (flavor of flavors(); track flavor.id) {
-                      <option [value]="flavor.id">{{ flavor.name }} ({{ flavor.code }})</option>
-                    }
-                  </select>
-                  <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
-                    <span class="material-icons-round text-lg">search</span>
-                  </div>
-                  <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400">
-                    <span class="material-icons-round text-lg">expand_more</span>
-                  </div>
-                </div>
-              </div>
+            <!-- OR CREATE NEW divider -->
+            <div class="flex items-center gap-4">
+              <div class="flex-1 h-px bg-gray-200"></div>
+              <span class="text-xs font-semibold uppercase tracking-widest text-orange-500">Or Create New</span>
+              <div class="flex-1 h-px bg-gray-200"></div>
+            </div>
 
-              <!-- OR CREATE NEW divider -->
-              <div class="flex items-center gap-4">
-                <div class="flex-1 h-px bg-gray-200"></div>
-                <span class="text-xs font-semibold uppercase tracking-widest text-orange-500">Or Create New</span>
-                <div class="flex-1 h-px bg-gray-200"></div>
-              </div>
-
-              <!-- New Flavor fields (below divider in select mode) -->
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label class="block text-sm font-semibold text-[#1e293b] mb-2">New Flavor Name</label>
-                  <input type="text" [formControl]="flavorNameControl" placeholder="e.g. Peppermint Breeze"
-                    class="block w-full rounded-lg border border-gray-200 bg-gray-50 text-sm text-[#1e293b] py-3 px-4 focus:ring-2 focus:ring-orange-300 focus:border-orange-400 transition placeholder:text-gray-400">
-                </div>
-                <div>
-                  <label class="block text-sm font-semibold text-[#1e293b] mb-2">Flavor Code</label>
-                  <input type="text" [formControl]="flavorCodeControl" placeholder="FLV-XXX"
-                    class="block w-full rounded-lg border border-gray-200 bg-gray-50 text-sm text-[#1e293b] py-3 px-4 uppercase focus:ring-2 focus:ring-orange-300 focus:border-orange-400 transition placeholder:text-gray-400">
-                </div>
-              </div>
-            }
-
-            @if (flavorMode() === 'create') {
-              <!-- Create New Flavor -->
+            <!-- New Flavor fields -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label class="block text-sm font-semibold text-[#1e293b] mb-2">Flavor Name</label>
-                <input type="text" [formControl]="flavorNameControl" placeholder="e.g. Spearmint Fresh"
+                <input type="text" [formControl]="flavorNameControl" placeholder="e.g. Peppermint Breeze"
                   class="block w-full rounded-lg border border-gray-200 bg-gray-50 text-sm text-[#1e293b] py-3 px-4 focus:ring-2 focus:ring-orange-300 focus:border-orange-400 transition placeholder:text-gray-400">
               </div>
               <div>
                 <label class="block text-sm font-semibold text-[#1e293b] mb-2">Flavor Code</label>
-                <input type="text" [formControl]="flavorCodeControl" placeholder="e.g. FLV-001"
+                <input type="text" [formControl]="flavorCodeControl" placeholder="FLV-XXX"
                   class="block w-full rounded-lg border border-gray-200 bg-gray-50 text-sm text-[#1e293b] py-3 px-4 uppercase focus:ring-2 focus:ring-orange-300 focus:border-orange-400 transition placeholder:text-gray-400">
               </div>
+            </div>
 
-              <!-- Seasonal variant checkbox -->
-              <label class="inline-flex items-center gap-2.5 bg-orange-50 border border-orange-200 rounded-lg px-4 py-3 cursor-pointer hover:bg-orange-100 transition">
-                <input type="checkbox" [(ngModel)]="isSeasonalVariant"
-                  class="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-400">
-                <span class="text-sm text-[#1e293b] font-medium">Define as unique seasonal variant</span>
-              </label>
-            }
+            <!-- Seasonal variant checkbox -->
+            <label class="inline-flex items-center gap-2.5 bg-orange-50 border border-orange-200 rounded-lg px-4 py-3 cursor-pointer hover:bg-orange-100 transition">
+              <input type="checkbox" [(ngModel)]="isSeasonalVariant"
+                class="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-400">
+              <span class="text-sm text-[#1e293b] font-medium">Define as unique seasonal variant</span>
+            </label>
           </div>
         </div>
 
@@ -318,8 +289,7 @@ export class RecipesAdminComponent {
   readonly statusMessage = signal('');
 
   // Section 1: Flavor
-  readonly flavorMode = signal<'create' | 'select'>('create');
-  readonly selectedFlavorControl = this.fb.control('');
+  readonly selectedRecipeControl = this.fb.control('');
   readonly flavorNameControl = this.fb.control('', Validators.required);
   readonly flavorCodeControl = this.fb.control('', Validators.required);
   isSeasonalVariant = false;
@@ -336,31 +306,43 @@ export class RecipesAdminComponent {
     this.bomLines().reduce((sum, line) => sum + Math.max(0, line.qty || 0), 0),
   );
 
+  readonly existingRecipeOptions = computed<ExistingRecipeOption[]>(() =>
+    this.recipes()
+      .map((recipe) => ({
+        id: recipe.id,
+        label: `${recipe.name} (${recipe.code})`,
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label)),
+  );
+
   // ---------- Section 1 logic ----------
 
-  onExistingFlavorSelected(): void {
-    const flavorId = this.selectedFlavorControl.value ?? '';
-    const flavor = this.flavors().find((f) => f.id === flavorId);
-    if (!flavor) return;
-
-    this.flavorNameControl.setValue(flavor.name);
-    this.flavorCodeControl.setValue(flavor.code);
-
-    // If the flavor already has a recipe, populate Section 2 + 3
-    const recipe = this.masterData.getRecipeForFlavor(flavorId);
-    if (recipe) {
-      this.recipeNameControl.setValue(recipe.name);
-      this.recipeCodeControl.setValue(recipe.code);
-      this.recipeDescriptionControl.setValue(recipe.description);
-
-      const lines: BomLine[] = recipe.ingredientLines.map((line) => ({
-        id: crypto.randomUUID(),
-        ingredientId: line.ingredientId,
-        lotBatchCode: '',
-        qty: line.qty,
-      }));
-      this.bomLines.set(lines);
+  onExistingRecipeSelected(): void {
+    const recipeId = this.selectedRecipeControl.value ?? '';
+    if (!recipeId) {
+      return;
     }
+
+    const recipe = this.recipes().find((item) => item.id === recipeId);
+    if (!recipe) {
+      return;
+    }
+
+    this.recipeNameControl.setValue(recipe.name);
+    this.recipeCodeControl.setValue(recipe.code);
+    this.recipeDescriptionControl.setValue(recipe.description);
+
+    const lines: BomLine[] = recipe.ingredientLines.map((line) => ({
+      id: crypto.randomUUID(),
+      ingredientId: line.ingredientId,
+      lotBatchCode: '',
+      qty: line.qty,
+    }));
+    this.bomLines.set(lines);
+
+    const mappedFlavor = this.flavors().find((item) => item.recipeId === recipeId);
+    this.flavorNameControl.setValue(mappedFlavor?.name ?? '');
+    this.flavorCodeControl.setValue(mappedFlavor?.code ?? '');
   }
 
   // ---------- Section 2 logic ----------
@@ -435,7 +417,11 @@ export class RecipesAdminComponent {
     }
 
     // Determine flavor
-    const existingFlavorId = this.selectedFlavorControl.value;
+    const selectedRecipeId = this.selectedRecipeControl.value ?? '';
+    const existingFlavor = selectedRecipeId
+      ? this.flavors().find((item) => item.recipeId === selectedRecipeId)
+      : null;
+    const existingFlavorId = existingFlavor?.id;
     let flavorFlow$;
 
     if (!existingFlavorId) {
@@ -452,15 +438,17 @@ export class RecipesAdminComponent {
     import('rxjs').then(({ switchMap, of }) => {
       flavorFlow$.pipe(
         switchMap((flavor) => {
-          const existingRecipe = this.masterData.getRecipeForFlavor(flavor.id);
+          const existingRecipe = selectedRecipeId
+            ? this.recipes().find((recipe) => recipe.id === selectedRecipeId) ?? null
+            : this.masterData.getRecipeForFlavor(flavor.id);
 
           if (existingRecipe) {
-            // Update existing recipe basic metadata
-            return this.masterData.updateRecipe(existingRecipe.id, {
-              name: recipeName,
-              code: recipeCode,
-              description: this.recipeDescriptionControl.value?.trim() || '',
-            }).pipe(
+            return this.masterData.mapFlavorToRecipe(flavor.id, existingRecipe.id).pipe(
+              switchMap(() => this.masterData.updateRecipe(existingRecipe.id, {
+                name: recipeName,
+                code: recipeCode,
+                description: this.recipeDescriptionControl.value?.trim() || '',
+              })),
               switchMap(recipe => {
                 // To keep it simple, we just override the full list using the new API shape.
                 // Our service handles upserting all lines simultaneously now.
@@ -468,7 +456,7 @@ export class RecipesAdminComponent {
 
                 // We use an empty call to bypass standard lines update and rebuild
                 return this.masterData.updateRecipe(recipe.id, { active: recipe.active });
-              })
+              }),
             );
           } else {
             // Create New Recipe
@@ -509,8 +497,7 @@ export class RecipesAdminComponent {
   }
 
   onReset(): void {
-    this.flavorMode.set('create');
-    this.selectedFlavorControl.setValue('');
+    this.selectedRecipeControl.setValue('');
     this.flavorNameControl.setValue('');
     this.flavorCodeControl.setValue('');
     this.isSeasonalVariant = false;
