@@ -65,7 +65,22 @@ export class AuthService {
 
   // ── Authentication ───────────────────────────
 
+  loginWithEmail(email: string, password: string): Observable<LoginSuccessResponse> {
+    this._isLoading.set(true);
+    return this.http.post<LoginSuccessResponse>(`${this.apiUrl}/login/email`, { email, password }).pipe(
+      tap((response) => {
+        this.handleLoginSuccess(response);
+        this._isLoading.set(false);
+      }),
+      catchError((err) => {
+        this._isLoading.set(false);
+        return throwError(() => err);
+      })
+    );
+  }
+
   loginWithPhone(phone: string, pin: string): Observable<LoginSuccessResponse> {
+
     this._isLoading.set(true);
 
     // We send phone and pin to our new endpoints.

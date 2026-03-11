@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../../core/auth/auth.service';
-import { isLoginRequires2FA } from '../../../shared/models/auth.models';
 import { environment } from '../../../../environments/environment';
 import { TokenService } from '../../../core/auth/token.service';
 
@@ -17,9 +16,7 @@ import { TokenService } from '../../../core/auth/token.service';
         <!-- Logo / Header -->
         <div class="text-center mb-8">
           <img src="gudgum-logo.webp" alt="Gud Gum" class="h-24 w-auto mx-auto mb-4 object-contain drop-shadow-sm dark:invert">
-
-
-          <p class="text-sm text-text-sub-light dark:text-text-sub-dark mt-1">Manufacturing Operations</p>
+          <p class="text-sm text-text-sub-light dark:text-text-sub-dark mt-1">Admin Dashboard</p>
         </div>
 
         <!-- Login Card -->
@@ -27,36 +24,39 @@ import { TokenService } from '../../../core/auth/token.service';
           <h2 class="text-lg font-semibold text-text-main-light dark:text-text-main-dark mb-6">Sign in to your account</h2>
 
           <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="space-y-4">
-            <!-- Phone -->
+            <!-- Email -->
             <div>
-              <label class="block text-sm font-medium text-text-sub-light dark:text-text-sub-dark mb-1">Phone Number</label>
-              <input formControlName="phone" type="tel" autocomplete="tel"
-                     class="block w-full rounded-lg border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-800 text-text-main-light dark:text-text-main-dark placeholder-text-sub-light dark:placeholder-text-sub-dark focus:ring-primary focus:border-primary text-sm py-2.5 px-3"
-                     placeholder="e.g. 9876543210">
-              @if (loginForm.get('phone')?.touched && loginForm.get('phone')?.hasError('required')) {
-                <p class="text-red-500 text-xs mt-1">Phone number is required</p>
+              <label class="block text-sm font-medium text-text-sub-light dark:text-text-sub-dark mb-1">Email Address</label>
+              <input formControlName="email" type="email" autocomplete="email"
+                     class="block w-full rounded-lg border border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-800 text-text-main-light dark:text-text-main-dark placeholder-text-sub-light dark:placeholder-text-sub-dark focus:ring-primary focus:border-primary text-sm py-2.5 px-3"
+                     placeholder="you@example.com">
+              @if (loginForm.get('email')?.touched && loginForm.get('email')?.hasError('required')) {
+                <p class="text-red-500 text-xs mt-1">Email is required</p>
               }
-              @if (loginForm.get('phone')?.touched && loginForm.get('phone')?.hasError('pattern')) {
-                <p class="text-red-500 text-xs mt-1">Enter a valid 10-digit number</p>
+              @if (loginForm.get('email')?.touched && loginForm.get('email')?.hasError('email')) {
+                <p class="text-red-500 text-xs mt-1">Enter a valid email address</p>
               }
             </div>
 
-            <!-- PIN -->
+            <!-- Password -->
             <div>
-              <label class="block text-sm font-medium text-text-sub-light dark:text-text-sub-dark mb-1">PIN</label>
+              <label class="block text-sm font-medium text-text-sub-light dark:text-text-sub-dark mb-1">Password</label>
               <div class="relative">
-                <input formControlName="pin"
+                <input formControlName="password"
                        [type]="showPassword() ? 'text' : 'password'"
                        autocomplete="current-password"
-                       class="block w-full rounded-lg border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-800 text-text-main-light dark:text-text-main-dark placeholder-text-sub-light dark:placeholder-text-sub-dark focus:ring-primary focus:border-primary text-sm py-2.5 px-3 pr-10"
-                       placeholder="Enter your 6-digit PIN">
+                       class="block w-full rounded-lg border border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-800 text-text-main-light dark:text-text-main-dark placeholder-text-sub-light dark:placeholder-text-sub-dark focus:ring-primary focus:border-primary text-sm py-2.5 px-3 pr-10"
+                       placeholder="Enter your password">
                 <button type="button" (click)="toggleShowPassword()"
                         class="absolute inset-y-0 right-0 flex items-center pr-3 text-text-sub-light dark:text-text-sub-dark">
                   <span class="material-icons-round text-lg">{{ showPassword() ? 'visibility_off' : 'visibility' }}</span>
                 </button>
               </div>
-              @if (loginForm.get('pin')?.touched && loginForm.get('pin')?.hasError('required')) {
-                <p class="text-red-500 text-xs mt-1">PIN is required</p>
+              @if (loginForm.get('password')?.touched && loginForm.get('password')?.hasError('required')) {
+                <p class="text-red-500 text-xs mt-1">Password is required</p>
+              }
+              @if (loginForm.get('password')?.touched && loginForm.get('password')?.hasError('minlength')) {
+                <p class="text-red-500 text-xs mt-1">Password must be at least 6 characters</p>
               }
             </div>
 
@@ -79,7 +79,7 @@ import { TokenService } from '../../../core/auth/token.service';
                 </svg>
                 <span>Signing in...</span>
               } @else {
-                <span>Continue</span>
+                <span>Sign In</span>
               }
             </button>
           </form>
@@ -99,8 +99,8 @@ export class LoginComponent {
   errorMessage = signal('');
 
   loginForm = this.fb.nonNullable.group({
-    phone: ['', [Validators.required, Validators.pattern('^[0-9]{10}$')]],
-    pin: ['', [Validators.required, Validators.minLength(4)]],
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required, Validators.minLength(6)]],
   });
 
   constructor() {
@@ -114,17 +114,17 @@ export class LoginComponent {
 
     this.errorMessage.set('');
     this.isLoading.set(true);
-    const { phone, pin } = this.loginForm.getRawValue();
+    const { email, password } = this.loginForm.getRawValue();
 
-    this.authService.loginWithPhone(phone, pin).subscribe({
-      next: (response) => {
+    this.authService.loginWithEmail(email, password).subscribe({
+      next: () => {
         this.isLoading.set(false);
         this.router.navigate(['/dashboard']);
       },
       error: (err) => {
         this.isLoading.set(false);
         if (err.status === 401 || err.status === 403) {
-          this.errorMessage.set('Invalid phone number or PIN.');
+          this.errorMessage.set('Invalid email or password.');
         } else if (err.status === 429) {
           this.errorMessage.set('Too many requests. Please wait and try again.');
         } else {
@@ -135,7 +135,6 @@ export class LoginComponent {
   }
 
   toggleShowPassword(): void {
-    this.showPassword.update((currentValue) => !currentValue);
+    this.showPassword.update((v) => !v);
   }
-
 }

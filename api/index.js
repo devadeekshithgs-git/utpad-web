@@ -857,6 +857,65 @@ app.get('/api/v1/ops/events/stream', (_req, res) => {
 
 const SESSION_TOKEN_SECRET = 'temporary-unsigned-jwt-secret'; // Real implementation should use proper JWT signing
 
+// ═══════════════════════════════════════════════════
+// SUPABASE EMAIL AUTH — Admin Dashboard Login
+// ═══════════════════════════════════════════════════
+app.post('/api/v1/auth/login/email', async (req, res) => {
+  const email = safeText(req.body?.email, '');
+  const password = safeText(req.body?.password, '');
+
+  if (!email || !password) {
+    return res.status(400).json({ error: 'invalid_request', message: 'Email and password are required.' });
+  }
+
+  try {
+    // Use Supabase GoTrue REST API to authenticate the user with email/password
+    const authResponse = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: SUPABASE_PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const authData = await authResponse.json();
+
+    if (!authResponse.ok) {
+      const message = authData?.error_description || authData?.msg || 'Invalid email or password.';
+      return res.status(401).json({ error: 'unauthorized', message });
+    }
+
+    const supabaseUser = authData.user;
+    const supabaseAccessToken = authData.access_token;
+    const supabaseRefreshToken = authData.refresh_token;
+
+    return res.json({
+      accessToken: supabaseAccessToken,
+      refreshToken: supabaseRefreshToken,
+      expiresIn: authData.expires_in || 3600,
+      user: {
+        userId: supabaseUser.id,
+        tenantId: 'default-tenant',
+        name: supabaseUser.user_metadata?.full_name || supabaseUser.email,
+        email: supabaseUser.email,
+        role: 'Admin',
+        status: 'active',
+        factoryIds: ['factory-1'],
+        permissions: [
+          { module: 'dashboard', action: 'read', resourceScope: 'tenant' },
+          { module: 'recipes', action: 'write', resourceScope: 'tenant' },
+          { module: 'workers', action: 'write', resourceScope: 'tenant' },
+          { module: 'operations', action: 'read', resourceScope: 'tenant' },
+        ],
+      },
+    });
+  } catch (error) {
+    console.error('Email login error:', error);
+    res.status(500).json({ error: 'internal_error', message: 'Login failed.' });
+  }
+});
+
 app.post('/api/v1/auth/login/phone', async (req, res) => {
   const phone = safeText(req.body?.phone, '');
   const pin = safeText(req.body?.pin, '');
