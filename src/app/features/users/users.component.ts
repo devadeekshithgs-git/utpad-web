@@ -202,20 +202,142 @@ import { UserRole } from '../../shared/models/auth.models';
                     [title]="worker.active ? 'Deactivate' : 'Activate'">
                     <span class="material-icons-round text-base">{{ worker.active ? 'toggle_on' : 'toggle_off' }}</span>
                   </button>
-                  <!-- Expand modules button -->
+                  <!-- Expand panel button -->
                   <button
                     type="button"
                     (click)="toggleWorkerCard(worker.id)"
-                    class="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-indigo-600 transition">
+                    class="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-indigo-600 transition"
+                    title="Edit credentials & modules">
                     <span class="material-icons-round text-base">more_vert</span>
                   </button>
                 </div>
               </div>
 
-              <!-- Module access editor (expanded) -->
+              <!-- ── EXPANDED PANEL ── -->
               @if (expandedWorkerId() === worker.id) {
-                <div class="px-6 pb-4 bg-indigo-50/40 border-t border-indigo-100">
-                  <p class="text-[10px] font-bold uppercase tracking-widest text-indigo-400 pt-3 mb-2">Module Access</p>
+                <div class="px-6 pb-5 bg-indigo-50/40 border-t border-indigo-100">
+
+                  <!-- ── CREDENTIALS SECTION ── -->
+                  <p class="text-[10px] font-bold uppercase tracking-widest text-indigo-400 pt-4 mb-3">Credentials</p>
+
+                  <!-- Phone + PIN display row -->
+                  <div class="grid grid-cols-2 gap-3 mb-4">
+
+                    <!-- Phone -->
+                    <div class="flex flex-col gap-1">
+                      <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">Phone</span>
+                      <div class="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2">
+                        <span class="material-icons-round text-gray-400 text-base">phone</span>
+                        <span class="flex-1 text-sm font-mono text-gray-800 tracking-widest">
+                          {{ revealPhoneId() === worker.id ? worker.phone : maskPhone(worker.phone) }}
+                        </span>
+                        <button
+                          type="button"
+                          (click)="toggleRevealPhone(worker.id)"
+                          class="text-gray-400 hover:text-indigo-600 transition"
+                          [title]="revealPhoneId() === worker.id ? 'Hide phone' : 'Reveal phone'">
+                          <span class="material-icons-round text-base">
+                            {{ revealPhoneId() === worker.id ? 'visibility_off' : 'visibility' }}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- PIN -->
+                    <div class="flex flex-col gap-1">
+                      <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400">PIN</span>
+                      <div class="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2">
+                        <span class="material-icons-round text-gray-400 text-base">pin</span>
+                        <span class="flex-1 text-sm font-mono text-gray-800 tracking-[0.3em]">
+                          {{ revealPinId() === worker.id ? worker.pin : '••••••' }}
+                        </span>
+                        <button
+                          type="button"
+                          (click)="toggleRevealPin(worker.id)"
+                          class="text-gray-400 hover:text-indigo-600 transition"
+                          [title]="revealPinId() === worker.id ? 'Hide PIN' : 'Reveal PIN'">
+                          <span class="material-icons-round text-base">
+                            {{ revealPinId() === worker.id ? 'visibility_off' : 'visibility' }}
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Change credentials button / form -->
+                  @if (credentialsEditId() !== worker.id) {
+                    <button
+                      type="button"
+                      (click)="openCredentialsEdit(worker)"
+                      class="inline-flex items-center gap-1.5 text-xs font-semibold rounded-lg border border-indigo-200 bg-white text-indigo-600 px-3 py-1.5 hover:bg-indigo-50 transition">
+                      <span class="material-icons-round text-sm">edit</span>
+                      Change Phone / PIN
+                    </button>
+                  } @else {
+                    <!-- Mini credential edit form -->
+                    <form
+                      [formGroup]="editCredentialsForm"
+                      (ngSubmit)="saveCredentials(worker.id)"
+                      class="bg-white border border-indigo-200 rounded-xl p-4 space-y-3">
+
+                      <p class="text-[10px] font-bold uppercase tracking-widest text-indigo-500 mb-1">Update Credentials</p>
+
+                      <div class="grid grid-cols-2 gap-3">
+                        <!-- New Phone -->
+                        <div>
+                          <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">New Phone</label>
+                          <input
+                            formControlName="editPhone"
+                            type="text"
+                            inputmode="numeric"
+                            maxlength="10"
+                            placeholder="Leave blank to keep"
+                            (input)="onEditPhoneInput($event)"
+                            class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 placeholder:text-gray-300" />
+                        </div>
+                        <!-- New PIN -->
+                        <div>
+                          <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">New PIN</label>
+                          <div class="relative">
+                            <input
+                              formControlName="editPin"
+                              [type]="showNewPin() ? 'text' : 'password'"
+                              inputmode="numeric"
+                              maxlength="6"
+                              placeholder="Leave blank to keep"
+                              (input)="onEditPinInput($event)"
+                              class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 pr-9 text-sm text-gray-800 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 placeholder:text-gray-300" />
+                            <button
+                              type="button"
+                              (click)="toggleShowNewPin()"
+                              class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-indigo-600 transition">
+                              <span class="material-icons-round text-base">{{ showNewPin() ? 'visibility_off' : 'visibility' }}</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="flex items-center gap-2">
+                        <button
+                          type="submit"
+                          [disabled]="editCredentialsForm.invalid || (editCredentialsForm.controls['editPhone'].value === '' && editCredentialsForm.controls['editPin'].value === '')"
+                          class="flex items-center gap-1.5 rounded-lg px-4 py-1.5 text-xs font-bold text-white transition hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+                          style="background: linear-gradient(135deg, #5b6bff, #7b3fe4);">
+                          <span class="material-icons-round text-sm">save</span>
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          (click)="closeCredentialsEdit()"
+                          class="flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-500 hover:border-gray-300 hover:text-gray-700 transition">
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  }
+
+                  <!-- ── MODULE ACCESS SECTION ── -->
+                  <p class="text-[10px] font-bold uppercase tracking-widest text-indigo-400 mt-5 mb-2">Module Access</p>
                   <div class="flex flex-wrap gap-2">
                     @for (module of moduleOptions; track module) {
                       <button
@@ -229,6 +351,7 @@ import { UserRole } from '../../shared/models/auth.models';
                       </button>
                     }
                   </div>
+
                 </div>
               }
             }
@@ -274,6 +397,14 @@ export class UsersComponent {
   readonly pageSize = 6;
   readonly today = new Date();
 
+  // --- Reveal toggles ---
+  readonly revealPhoneId = signal<string | null>(null);
+  readonly revealPinId = signal<string | null>(null);
+
+  // --- Credential edit ---
+  readonly credentialsEditId = signal<string | null>(null);
+  readonly showNewPin = signal(false);
+
   readonly moduleOptions: WorkerModule[] = ['inwarding', 'production', 'packing', 'dispatch'];
   readonly roleOptions: UserRole[] = [
     UserRole.InwardingStaff,
@@ -309,6 +440,11 @@ export class UsersComponent {
     role: [UserRole.InwardingStaff, Validators.required],
   });
 
+  readonly editCredentialsForm = this.fb.nonNullable.group({
+    editPhone: ['', Validators.pattern('^[0-9]{10}$')],
+    editPin: ['', Validators.pattern('^[0-9]{4,6}$')],
+  });
+
   nextPage(): void { if (this.canNext()) this.currentPage.update(p => p + 1); }
   prevPage(): void { if (this.canPrev()) this.currentPage.update(p => p - 1); }
 
@@ -327,6 +463,18 @@ export class UsersComponent {
     const input = event.target as HTMLInputElement;
     const digits = input.value.replace(/\D/g, '').slice(0, 6);
     this.credentialForm.controls.pin.setValue(digits, { emitEvent: false });
+  }
+
+  onEditPhoneInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const digits = input.value.replace(/\D/g, '').slice(0, 10);
+    this.editCredentialsForm.controls.editPhone.setValue(digits, { emitEvent: false });
+  }
+
+  onEditPinInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const digits = input.value.replace(/\D/g, '').slice(0, 6);
+    this.editCredentialsForm.controls.editPin.setValue(digits, { emitEvent: false });
   }
 
   toggleCreateModule(module: WorkerModule): void {
@@ -366,7 +514,14 @@ export class UsersComponent {
   }
 
   toggleWorkerCard(workerId: string): void {
-    this.expandedWorkerId.update((current) => (current === workerId ? null : workerId));
+    const next = this.expandedWorkerId() === workerId ? null : workerId;
+    this.expandedWorkerId.set(next);
+    // Close credential edit when collapsing
+    if (!next) {
+      this.credentialsEditId.set(null);
+      this.revealPhoneId.set(null);
+      this.revealPinId.set(null);
+    }
   }
 
   toggleWorkerActive(worker: WorkerCredential): void {
@@ -383,6 +538,54 @@ export class UsersComponent {
       return;
     }
     this.operations.updateWorkerAccess(worker.id, nextModules);
+  }
+
+  // --- Reveal toggles ---
+  toggleRevealPhone(workerId: string): void {
+    this.revealPhoneId.update(id => id === workerId ? null : workerId);
+  }
+
+  toggleRevealPin(workerId: string): void {
+    this.revealPinId.update(id => id === workerId ? null : workerId);
+  }
+
+  // --- Credential edit ---
+  openCredentialsEdit(worker: WorkerCredential): void {
+    this.credentialsEditId.set(worker.id);
+    this.showNewPin.set(false);
+    this.editCredentialsForm.reset({ editPhone: '', editPin: '' });
+  }
+
+  toggleShowNewPin(): void {
+    this.showNewPin.update(v => !v);
+  }
+
+  closeCredentialsEdit(): void {
+    this.credentialsEditId.set(null);
+    this.editCredentialsForm.reset({ editPhone: '', editPin: '' });
+  }
+
+  saveCredentials(workerId: string): void {
+    const { editPhone, editPin } = this.editCredentialsForm.getRawValue();
+    if (!editPhone && !editPin) return;
+
+    this.operations.updateWorkerCredentials(
+      workerId,
+      editPhone.trim() || undefined,
+      editPin.trim() || undefined,
+    );
+
+    this.setStatus('Credentials updated successfully.', 'success');
+    this.closeCredentialsEdit();
+    // Auto-reveal so admin can verify the change
+    if (editPhone) this.revealPhoneId.set(workerId);
+    if (editPin) this.revealPinId.set(workerId);
+  }
+
+  // --- Display helpers ---
+  maskPhone(phone: string): string {
+    if (!phone || phone.length < 4) return '••••••••••';
+    return '•'.repeat(phone.length - 3) + phone.slice(-3);
   }
 
   workerInitials(name: string): string {

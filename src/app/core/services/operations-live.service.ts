@@ -312,6 +312,20 @@ export class OperationsLiveService {
     void this.updateWorkerActiveInBackend(workerId, active);
   }
 
+  updateWorkerCredentials(workerId: string, phone?: string, pin?: string): void {
+    this._workers.update((workers) =>
+      workers.map((worker) => {
+        if (worker.id !== workerId) return worker;
+        return {
+          ...worker,
+          ...(phone ? { phone } : {}),
+          ...(pin ? { pin } : {}),
+        };
+      }),
+    );
+    void this.updateWorkerCredentialsInBackend(workerId, phone, pin);
+  }
+
   async submitInwarding(input: InwardingSubmission): Promise<OperationEvent> {
     const worker = this.resolveWorker('inwarding');
     const request: SubmitOperationEventRequest = {
@@ -468,6 +482,22 @@ export class OperationsLiveService {
           'X-Client-Platform': 'web',
         },
         body: JSON.stringify({ active }),
+      });
+    } catch {
+      // Keep optimistic local state if backend write fails.
+    }
+  }
+
+  private async updateWorkerCredentialsInBackend(workerId: string, phone?: string, pin?: string): Promise<void> {
+    if (!phone && !pin) return;
+    try {
+      await fetch(`${this.opsApiUrl}/workers/${encodeURIComponent(workerId)}/credentials`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Client-Platform': 'web',
+        },
+        body: JSON.stringify({ ...(phone ? { phone } : {}), ...(pin ? { pin } : {}) }),
       });
     } catch {
       // Keep optimistic local state if backend write fails.
