@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
 import { MockDataService } from '../../../core/services/mock-data.service';
 import { OperationsLiveService } from '../../../core/services/operations-live.service';
-import { RecipeMasterDataService } from '../../../core/services/recipe-master-data.service';
+import { RecipeMasterDataService, IngredientUnit } from '../../../core/services/recipe-master-data.service';
 
 @Component({
   selector: 'app-inwarding',
@@ -34,20 +34,51 @@ import { RecipeMasterDataService } from '../../../core/services/recipe-master-da
               <div class="relative flex-1">
                 <select [formControl]="form.controls.ingredientId"
                         (change)="onIngredientSelected()"
-                        class="block w-full rounded-lg border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-700 text-text-main-light dark:text-text-main-dark focus:ring-primary focus:border-primary text-sm py-2.5 pl-3 pr-10 appearance-none">
+                        class="dropdown-with-arrow block w-full rounded-lg border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-700 text-text-main-light dark:text-text-main-dark focus:ring-primary focus:border-primary text-sm py-2.5 pl-3 pr-10 appearance-none">
                   <option value="">Select Ingredient...</option>
                   @for (ing of ingredients(); track ing.id) {
                     <option [value]="ing.id">{{ ing.name }}</option>
                   }
                 </select>
-                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-text-sub-light dark:text-text-sub-dark">
-                  <span class="material-icons-round text-sm">expand_more</span>
-                </div>
               </div>
-              <button class="flex items-center justify-center px-3 bg-primary bg-opacity-10 dark:bg-opacity-20 rounded-lg text-primary font-medium hover:bg-opacity-20 transition-colors">
-                <span class="material-icons-round">add</span>
+              <button (click)="toggleNewIngredientForm()"
+                      class="flex items-center justify-center px-3 bg-primary bg-opacity-10 dark:bg-opacity-20 rounded-lg text-primary font-medium hover:bg-opacity-20 transition-colors"
+                      [title]="showNewIngredientForm() ? 'Cancel' : 'Add new ingredient'">
+                <span class="material-icons-round">{{ showNewIngredientForm() ? 'close' : 'add' }}</span>
               </button>
             </div>
+
+            <!-- Inline add ingredient form -->
+            @if (showNewIngredientForm()) {
+              <div class="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 space-y-3">
+                <p class="text-xs font-semibold uppercase tracking-wider text-primary">Add New Ingredient</p>
+                <div class="flex space-x-2">
+                  <input [formControl]="newIngredientName" type="text" placeholder="Ingredient name"
+                         class="flex-1 block rounded-lg border-border-light dark:border-border-dark bg-white dark:bg-gray-700 text-text-main-light dark:text-text-main-dark focus:ring-primary focus:border-primary text-sm py-2 px-3" />
+                  <select [formControl]="newIngredientUnit"
+                          class="rounded-lg border-border-light dark:border-border-dark bg-white dark:bg-gray-700 text-text-main-light dark:text-text-main-dark text-sm py-2 px-2">
+                    @for (unit of ingredientUnits; track unit) {
+                      <option [value]="unit">{{ unit }}</option>
+                    }
+                  </select>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <button (click)="onCreateIngredient()"
+                          [disabled]="!newIngredientName.value?.trim()"
+                          class="flex items-center space-x-1 px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-bold hover:bg-primary-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed">
+                    <span class="material-icons-round text-sm">add_circle</span>
+                    <span>Create & Select</span>
+                  </button>
+                  <button (click)="toggleNewIngredientForm()"
+                          class="px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-xs font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors">
+                    Cancel
+                  </button>
+                </div>
+                @if (newIngredientMessage()) {
+                  <p class="text-xs" [class]="newIngredientMessage().startsWith('Error') ? 'text-red-600' : 'text-green-600'">{{ newIngredientMessage() }}</p>
+                }
+              </div>
+            }
           </div>
 
           <!-- Batch Barcode -->
@@ -73,15 +104,12 @@ import { RecipeMasterDataService } from '../../../core/services/recipe-master-da
               <label class="block text-sm font-medium text-text-sub-light dark:text-text-sub-dark mb-1">Unit</label>
               <div class="relative">
                 <select [formControl]="form.controls.unit"
-                        class="block w-full rounded-lg border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-700 text-text-main-light dark:text-text-main-dark focus:ring-primary focus:border-primary text-sm py-2.5 appearance-none">
+                        class="dropdown-with-arrow block w-full rounded-lg border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-700 text-text-main-light dark:text-text-main-dark focus:ring-primary focus:border-primary text-sm py-2.5 appearance-none">
                   <option value="kg">kg</option>
                   <option value="L">L</option>
                   <option value="pcs">pcs</option>
                   <option value="boxes">boxes</option>
                 </select>
-                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-text-sub-light dark:text-text-sub-dark">
-                  <span class="material-icons-round text-sm">expand_more</span>
-                </div>
               </div>
             </div>
           </div>
@@ -97,15 +125,12 @@ import { RecipeMasterDataService } from '../../../core/services/recipe-master-da
               <label class="block text-sm font-medium text-text-sub-light dark:text-text-sub-dark mb-1">Vendor</label>
               <div class="relative">
                 <select [formControl]="form.controls.vendorId"
-                        class="block w-full rounded-lg border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-700 text-text-main-light dark:text-text-main-dark focus:ring-primary focus:border-primary text-sm py-2.5 appearance-none">
+                        class="dropdown-with-arrow block w-full rounded-lg border-border-light dark:border-border-dark bg-gray-50 dark:bg-gray-700 text-text-main-light dark:text-text-main-dark focus:ring-primary focus:border-primary text-sm py-2.5 appearance-none">
                   <option value="">Select Vendor...</option>
                   @for (v of vendors; track v.id) {
                     <option [value]="v.id">{{ v.name }}</option>
                   }
                 </select>
-                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-text-sub-light dark:text-text-sub-dark">
-                  <span class="material-icons-round text-sm">expand_more</span>
-                </div>
               </div>
             </div>
           </div>
@@ -181,6 +206,13 @@ export class InwardingComponent {
   selectedFileName = signal('');
   submitMessage = signal('');
 
+  // New ingredient form state
+  showNewIngredientForm = signal(false);
+  newIngredientMessage = signal('');
+  readonly ingredientUnits: IngredientUnit[] = ['kg', 'L', 'g', 'ml', 'pcs', 'boxes'];
+  readonly newIngredientName = this.fb.control('', Validators.required);
+  readonly newIngredientUnit = this.fb.nonNullable.control<IngredientUnit>('kg');
+
   form = this.fb.nonNullable.group({
     ingredientId: ['', Validators.required],
     batchBarcode: [''],
@@ -201,6 +233,48 @@ export class InwardingComponent {
 
   removeFile(): void {
     this.selectedFileName.set('');
+  }
+
+  toggleNewIngredientForm(): void {
+    this.showNewIngredientForm.update(v => !v);
+    this.newIngredientMessage.set('');
+    this.newIngredientName.setValue('');
+    this.newIngredientUnit.setValue('kg');
+  }
+
+  onCreateIngredient(): void {
+    const name = this.newIngredientName.value?.trim() ?? '';
+    const unit = this.newIngredientUnit.value;
+    if (!name) {
+      this.newIngredientMessage.set('Please enter an ingredient name.');
+      return;
+    }
+
+    // Check if already exists
+    const existing = this.ingredients().find(
+      (ing) => ing.name.trim().toLowerCase() === name.toLowerCase(),
+    );
+    if (existing) {
+      this.form.controls.ingredientId.setValue(existing.id);
+      this.form.controls.unit.setValue(existing.unit);
+      this.newIngredientMessage.set(`"${existing.name}" already exists — selected it for you.`);
+      this.showNewIngredientForm.set(false);
+      return;
+    }
+
+    this.masterData.createIngredient({ name, unit }).subscribe({
+      next: (ingredient) => {
+        this.form.controls.ingredientId.setValue(ingredient.id);
+        this.form.controls.unit.setValue(ingredient.unit);
+        this.newIngredientName.setValue('');
+        this.newIngredientMessage.set('');
+        this.showNewIngredientForm.set(false);
+        this.submitMessage.set(`Ingredient "${ingredient.name}" created and selected.`);
+      },
+      error: (err: Error) => {
+        this.newIngredientMessage.set(`Error creating ingredient: ${err.message}`);
+      },
+    });
   }
 
   onIngredientSelected(): void {
