@@ -15,14 +15,13 @@ import { UserRole } from '../../shared/models/auth.models';
       <div class="mb-8">
         <p class="text-xs font-bold uppercase tracking-widest mb-1" style="color:#5b6bff;">ACCESS MANAGEMENT</p>
         <h1 class="text-3xl font-bold text-gray-900 leading-tight">Worker Credentials</h1>
-        <p class="mt-1 text-sm text-gray-500 max-w-xl">Issue, audit, and revoke worker access credentials with high-precision control across your infrastructure.</p>
       </div>
 
-      <!-- Two-column layout -->
-      <div class="flex gap-6 items-start">
+      <!-- Single-column stacked layout -->
+      <div class="flex flex-col gap-6">
 
-        <!-- LEFT COLUMN: New Credential Form -->
-        <div class="flex-shrink-0 w-[360px] space-y-4">
+        <!-- TOP: New Credential Form (full width) -->
+        <div class="w-full">
 
           <!-- Form Card -->
           <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
@@ -72,27 +71,21 @@ import { UserRole } from '../../shared/models/auth.models';
                 </div>
               </div>
 
-              <!-- Access Level (Role) + Expiration layout -->
-              <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Access Level</label>
-                  <div class="relative">
-                    <select
-                      formControlName="role"
-                      (change)="onRoleChanged()"
-                      class="w-full appearance-none rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 pr-8 text-sm text-gray-800 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
-                      @for (role of roleOptions; track role) {
-                        <option [value]="role">{{ formatRole(role) }}</option>
-                      }
-                    </select>
-                    <span class="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 material-icons-round text-gray-400 text-base">expand_more</span>
-                  </div>
-                </div>
-                <div>
-                  <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Created</label>
-                  <div class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-400">
-                    {{ today | date:'MM/dd/yyyy' }}
-                  </div>
+              <!-- Access Level (Role) -->
+              <div>
+                <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Access Level</label>
+                <div class="relative">
+                  <select
+                    formControlName="role"
+                    (change)="onRoleChanged()"
+                    class="w-full appearance-none rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 pr-10 text-sm text-gray-800 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
+                    @for (role of roleOptions; track role) {
+                      <option [value]="role">{{ formatRole(role) }}</option>
+                    }
+                  </select>
+                  <svg class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
+                  </svg>
                 </div>
               </div>
 
@@ -134,17 +127,10 @@ import { UserRole } from '../../shared/models/auth.models';
                 {{ statusMessage() }}
               </div>
             }
-          </div>
-
-          <!-- Info note -->
-          <div class="flex gap-3 rounded-2xl border border-dashed border-gray-300 bg-white/70 px-4 py-3.5">
-            <span class="material-icons-round text-indigo-400 text-lg mt-0.5 flex-shrink-0">info</span>
-            <p class="text-xs text-gray-500 leading-relaxed">Generated credentials use AES-256 encryption. Ensure the worker receives their token via a secure channel as it will only be displayed once.</p>
-          </div>
         </div>
 
-        <!-- RIGHT COLUMN: Active Workers Table -->
-        <div class="flex-1 bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
+        <!-- Active Workers Table (full width, below form) -->
+        <div class="w-full bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
 
           <!-- Table header -->
           <div class="px-6 py-4 flex items-center justify-between border-b border-gray-100">
