@@ -16,7 +16,6 @@ interface OpsWorkerRow {
 }
 
 const ALL_MODULES: WorkerModule[] = ['inwarding', 'production', 'packing', 'dispatch', 'returns'];
-const ROLES = ['inwarding_staff', 'production_operator', 'packing_staff', 'dispatch_staff', 'supervisor'];
 
 @Component({
   selector: 'app-users',
@@ -73,31 +72,19 @@ const ROLES = ['inwarding_staff', 'production_operator', 'packing_staff', 'dispa
                 </div>
               </div>
 
-              <!-- PIN + Role -->
-              <div class="grid grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">PIN (4 digits) *</label>
-                  <input
-                    formControlName="pin"
-                    type="password"
-                    inputmode="numeric"
-                    placeholder="••••"
-                    maxlength="4"
-                    class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-800 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 placeholder:text-gray-300" />
-                  @if (workerForm.controls.pin.invalid && workerForm.controls.pin.touched) {
-                    <p class="text-xs text-red-500 mt-1">Must be exactly 4 digits.</p>
-                  }
-                </div>
-                <div>
-                  <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Role *</label>
-                  <select
-                    formControlName="role"
-                    class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-800 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100">
-                    @for (role of roleOptions; track role) {
-                      <option [value]="role">{{ role | titlecase }}</option>
-                    }
-                  </select>
-                </div>
+              <!-- PIN -->
+              <div>
+                <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">PIN (4 digits) *</label>
+                <input
+                  formControlName="pin"
+                  type="password"
+                  inputmode="numeric"
+                  placeholder="••••"
+                  maxlength="4"
+                  class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-800 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 placeholder:text-gray-300" />
+                @if (workerForm.controls.pin.invalid && workerForm.controls.pin.touched) {
+                  <p class="text-xs text-red-500 mt-1">Must be exactly 4 digits.</p>
+                }
               </div>
 
               <!-- Module Access -->
@@ -238,7 +225,6 @@ export class UsersComponent implements OnInit {
   private readonly supabase = inject(SupabaseService);
 
   readonly moduleOptions: WorkerModule[] = ALL_MODULES;
-  readonly roleOptions: string[] = ROLES;
 
   readonly workers = signal<OpsWorkerRow[]>([]);
   readonly loading = signal(false);
@@ -277,7 +263,6 @@ export class UsersComponent implements OnInit {
       Validators.required,
       Validators.pattern(/^\d{4}$/),
     ]],
-    role: [ROLES[0], Validators.required],
   });
 
   ngOnInit(): void {
@@ -325,27 +310,27 @@ export class UsersComponent implements OnInit {
     }
 
     this.saving.set(true);
-    const { name, phone, pin, role } = this.workerForm.getRawValue();
+    const { name, phone, pin } = this.workerForm.getRawValue();
 
-    const { data: newWorker, error: workerError } = await this.supabase.client
+    const workerId = `worker-${phone.trim()}-${Date.now()}`;
+
+    const { error: workerError } = await this.supabase.client
       .from('ops_workers')
       .insert({
+        worker_id: workerId,
         name: name.trim(),
         phone: phone.trim(),
         pin: pin.trim(),
-        worker_role: role,
+        worker_role: 'worker',
         active: true,
-      })
-      .select('worker_id')
-      .single();
+      });
 
-    if (workerError || !newWorker) {
-      this.setStatus(`Failed to create worker: ${workerError?.message ?? 'Unknown error'}`, 'error');
+    if (workerError) {
+      this.setStatus(`Failed to create worker: ${workerError.message}`, 'error');
       this.saving.set(false);
       return;
     }
 
-    const workerId = (newWorker as any).worker_id;
     const moduleRows = this.selectedModules().map(module => ({
       worker_id: workerId,
       module,
@@ -359,7 +344,7 @@ export class UsersComponent implements OnInit {
       this.setStatus(`Worker created but module assignment failed: ${moduleError.message}`, 'error');
     } else {
       this.setStatus(`Worker "${name}" created successfully.`, 'success');
-      this.workerForm.reset({ name: '', phone: '', pin: '', role: ROLES[0] });
+      this.workerForm.reset({ name: '', phone: '', pin: '' });
       this.selectedModules.set(['inwarding']);
       this.currentPage.set(0);
       await this.loadWorkers();
