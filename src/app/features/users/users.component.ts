@@ -3,7 +3,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { SupabaseService } from '../../core/supabase.service';
 
-type WorkerModule = 'inwarding' | 'production' | 'packing' | 'dispatch' | 'returns';
+type WorkerModule = 'inwarding' | 'production' | 'packing' | 'dispatch';
 
 interface OpsWorkerRow {
   worker_id: string;
@@ -15,7 +15,7 @@ interface OpsWorkerRow {
   modules: WorkerModule[];
 }
 
-const ALL_MODULES: WorkerModule[] = ['inwarding', 'production', 'packing', 'dispatch', 'returns'];
+const ALL_MODULES: WorkerModule[] = ['inwarding', 'production', 'packing', 'dispatch'];
 
 @Component({
   selector: 'app-users',
