@@ -72,21 +72,6 @@ const ALL_MODULES: WorkerModule[] = ['inwarding', 'production', 'packing', 'disp
                 </div>
               </div>
 
-              <!-- PIN -->
-              <div>
-                <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">PIN (6 digits) *</label>
-                <input
-                  formControlName="pin"
-                  type="password"
-                  inputmode="numeric"
-                  placeholder="••••••"
-                  maxlength="6"
-                  class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-800 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 placeholder:text-gray-300" />
-                @if (workerForm.controls.pin.invalid && workerForm.controls.pin.touched) {
-                  <p class="text-xs text-red-500 mt-1">Must be exactly 6 digits.</p>
-                }
-              </div>
-
               <!-- Module Access -->
               <div>
                 <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Module Access</label>
@@ -278,23 +263,6 @@ const ALL_MODULES: WorkerModule[] = ['inwarding', 'production', 'packing', 'disp
               }
             </div>
 
-            <!-- PIN (optional change) -->
-            <div>
-              <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">
-                New PIN (6 digits) <span class="normal-case font-normal text-gray-300">— leave blank to keep current</span>
-              </label>
-              <input
-                formControlName="pin"
-                type="password"
-                inputmode="numeric"
-                placeholder="••••••"
-                maxlength="6"
-                class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-800 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 placeholder:text-gray-300" />
-              @if (editForm.controls.pin.invalid && editForm.controls.pin.touched) {
-                <p class="text-xs text-red-500 mt-1">PIN must be exactly 6 digits.</p>
-              }
-            </div>
-
           </form>
 
           <!-- Module Access -->
@@ -416,10 +384,6 @@ export class UsersComponent implements OnInit {
       Validators.required,
       Validators.pattern(/^[6-9]\d{9}$/),
     ]],
-    pin: ['', [
-      Validators.required,
-      Validators.pattern(/^\d{6}$/),
-    ]],
   });
 
   readonly editForm = this.fb.nonNullable.group({
@@ -428,7 +392,6 @@ export class UsersComponent implements OnInit {
       Validators.required,
       Validators.pattern(/^[6-9]\d{9}$/),
     ]],
-    pin: ['', Validators.pattern(/^\d{6}$/)],  // optional — blank = keep current PIN
   });
 
   ngOnInit(): void {
@@ -478,16 +441,29 @@ export class UsersComponent implements OnInit {
     }
 
     this.saving.set(true);
-    const { name, phone, pin } = this.workerForm.getRawValue();
-    const workerId = `worker-${phone.trim()}-${Date.now()}`;
+    const { name, phone } = this.workerForm.getRawValue();
+    const phoneTrimmed = phone.trim();
+
+    // Prevent duplicate workers with the same phone number
+    const { data: existing } = await this.supabase.client
+      .from('ops_workers')
+      .select('worker_id')
+      .eq('phone', phoneTrimmed)
+      .maybeSingle();
+    if (existing) {
+      this.setStatus(`A worker with phone ${phoneTrimmed} already exists.`, 'error');
+      this.saving.set(false);
+      return;
+    }
+
+    const workerId = `worker-${phoneTrimmed}-${Date.now()}`;
 
     const { error: workerError } = await this.supabase.client
       .from('ops_workers')
       .insert({
         worker_id: workerId,
         name: name.trim(),
-        phone: phone.trim(),
-        pin: pin.trim(),
+        phone: phoneTrimmed,
         worker_role: 'worker',
         active: true,
       });
@@ -506,7 +482,7 @@ export class UsersComponent implements OnInit {
       this.setStatus(`Worker created but module assignment failed: ${moduleError.message}`, 'error');
     } else {
       this.setStatus(`Worker "${name}" created successfully.`, 'success');
-      this.workerForm.reset({ name: '', phone: '', pin: '' });
+      this.workerForm.reset({ name: '', phone: '' });
       this.selectedModules.set(['inwarding']);
       this.currentPage.set(0);
       await this.loadWorkers();
@@ -523,7 +499,6 @@ export class UsersComponent implements OnInit {
     this.editForm.reset({
       name: worker.name,
       phone: worker.phone ?? '',
-      pin: '',
     });
   }
 
@@ -551,19 +526,11 @@ export class UsersComponent implements OnInit {
     }
 
     this.editSaving.set(true);
-    const { name, phone, pin } = this.editForm.getRawValue();
-
-    const updatePayload: Record<string, string> = {
-      name: name.trim(),
-      phone: phone.trim(),
-    };
-    if (pin.trim()) {
-      updatePayload['pin'] = pin.trim();
-    }
+    const { name, phone } = this.editForm.getRawValue();
 
     const { error: updateError } = await this.supabase.client
       .from('ops_workers')
-      .update(updatePayload)
+      .update({ name: name.trim(), phone: phone.trim() })
       .eq('worker_id', worker.worker_id);
 
     if (updateError) {
