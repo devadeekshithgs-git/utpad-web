@@ -1019,8 +1019,8 @@ app.post('/api/v1/auth/login/phone', async (req, res) => {
   const phone = safeText(req.body?.phone, '');
   const pin = safeText(req.body?.pin, '');
 
-  if (!phone || !pin) {
-    return res.status(400).json({ error: 'invalid_request', message: 'Phone and PIN required.' });
+  if (!phone) {
+    return res.status(400).json({ error: 'invalid_request', message: 'Phone is required.' });
   }
 
   try {
@@ -1030,7 +1030,7 @@ app.post('/api/v1/auth/login/phone', async (req, res) => {
     if (SUPABASE_ENABLED) {
       // Find worker by phone and pin — uses real column names: worker_id, worker_role
       const rows = await supabaseRequest(
-        `ops_workers?phone=eq.${encodeURIComponent(phone)}&pin=eq.${encodeURIComponent(pin)}&select=worker_id,name,phone,worker_role,active&limit=1`
+        `ops_workers?phone=eq.${encodeURIComponent(phone)}&select=worker_id,name,phone,worker_role,active&limit=1`
       );
 
       if (!rows || rows.length === 0) {
@@ -1055,7 +1055,7 @@ app.post('/api/v1/auth/login/phone', async (req, res) => {
       modules = (accessRows || []).map(r => r.module);
     } else {
       // Fallback auth
-      const match = Array.from(fallbackWorkers.values()).find(w => w.phone === phone && w.pin === pin);
+      const match = Array.from(fallbackWorkers.values()).find(w => w.phone === phone);
       if (!match) {
         return res.status(401).json({ error: 'unauthorized', message: 'Invalid phone or PIN.' });
       }
