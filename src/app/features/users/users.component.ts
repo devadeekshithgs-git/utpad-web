@@ -72,6 +72,21 @@ const ALL_MODULES: WorkerModule[] = ['inwarding', 'production', 'packing', 'disp
                 </div>
               </div>
 
+              <!-- PIN -->
+              <div>
+                <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Login PIN (4–6 digits) *</label>
+                <input
+                  formControlName="pin"
+                  type="text"
+                  inputmode="numeric"
+                  placeholder="e.g. 123456"
+                  maxlength="6"
+                  class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-800 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 placeholder:text-gray-300" />
+                @if (workerForm.controls.pin.invalid && workerForm.controls.pin.touched) {
+                  <p class="text-xs text-red-500 mt-1">PIN must be 4–6 digits.</p>
+                }
+              </div>
+
               <!-- Module Access -->
               <div>
                 <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Module Access</label>
@@ -263,6 +278,21 @@ const ALL_MODULES: WorkerModule[] = ['inwarding', 'production', 'packing', 'disp
               }
             </div>
 
+            <!-- New PIN (optional reset) -->
+            <div>
+              <label class="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">New PIN (leave blank to keep current)</label>
+              <input
+                formControlName="newPin"
+                type="text"
+                inputmode="numeric"
+                maxlength="6"
+                placeholder="4–6 digits"
+                class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-800 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 placeholder:text-gray-300" />
+              @if (editForm.controls.newPin.invalid && editForm.controls.newPin.touched) {
+                <p class="text-xs text-red-500 mt-1">PIN must be 4–6 digits.</p>
+              }
+            </div>
+
           </form>
 
           <!-- Module Access -->
@@ -329,8 +359,8 @@ const ALL_MODULES: WorkerModule[] = ['inwarding', 'production', 'packing', 'disp
             [class]="selectedWorker()!.active
               ? 'border-red-200 text-red-500 hover:bg-red-50'
               : 'border-green-200 text-green-600 hover:bg-green-50'">
-            <span class="material-icons-round text-base">{{ selectedWorker()!.active ? 'toggle_off' : 'toggle_on' }}</span>
-            {{ selectedWorker()!.active ? 'Deactivate Worker' : 'Activate Worker' }}
+            <span class="material-icons-round text-base">{{ selectedWorker()!.active ? 'delete_outline' : 'toggle_on' }}</span>
+            {{ selectedWorker()!.active ? 'Delete Worker' : 'Restore Worker' }}
           </button>
         </div>
 
@@ -384,6 +414,10 @@ export class UsersComponent implements OnInit {
       Validators.required,
       Validators.pattern(/^[6-9]\d{9}$/),
     ]],
+    pin: ['', [
+      Validators.required,
+      Validators.pattern(/^\d{4,6}$/),
+    ]],
   });
 
   readonly editForm = this.fb.nonNullable.group({
@@ -391,6 +425,9 @@ export class UsersComponent implements OnInit {
     phone: ['', [
       Validators.required,
       Validators.pattern(/^[6-9]\d{9}$/),
+    ]],
+    newPin: ['', [
+      Validators.pattern(/^\d{4,6}$/),
     ]],
   });
 
@@ -403,6 +440,7 @@ export class UsersComponent implements OnInit {
     const { data, error } = await this.supabase.client
       .from('ops_workers')
       .select('worker_id, name, phone, worker_role, active, created_at, ops_worker_module_access(module)')
+      .eq('active', true)
       .order('created_at', { ascending: false });
 
     if (!error && data) {
@@ -441,7 +479,7 @@ export class UsersComponent implements OnInit {
     }
 
     this.saving.set(true);
-    const { name, phone } = this.workerForm.getRawValue();
+    const { name, phone, pin } = this.workerForm.getRawValue();
     const phoneTrimmed = phone.trim();
 
     // Prevent duplicate workers with the same phone number
@@ -464,6 +502,7 @@ export class UsersComponent implements OnInit {
         worker_id: workerId,
         name: name.trim(),
         phone: phoneTrimmed,
+        pin: pin.trim(),
         worker_role: 'worker',
         active: true,
       });
@@ -482,7 +521,7 @@ export class UsersComponent implements OnInit {
       this.setStatus(`Worker created but module assignment failed: ${moduleError.message}`, 'error');
     } else {
       this.setStatus(`Worker "${name}" created successfully.`, 'success');
-      this.workerForm.reset({ name: '', phone: '' });
+      this.workerForm.reset({ name: '', phone: '', pin: '' });
       this.selectedModules.set(['inwarding']);
       this.currentPage.set(0);
       await this.loadWorkers();
@@ -499,6 +538,7 @@ export class UsersComponent implements OnInit {
     this.editForm.reset({
       name: worker.name,
       phone: worker.phone ?? '',
+      newPin: '',
     });
   }
 
@@ -526,11 +566,16 @@ export class UsersComponent implements OnInit {
     }
 
     this.editSaving.set(true);
-    const { name, phone } = this.editForm.getRawValue();
+    const { name, phone, newPin } = this.editForm.getRawValue();
+
+    const updateData: Record<string, string> = { name: name.trim(), phone: phone.trim() };
+    if (newPin?.trim()) {
+      updateData['pin'] = newPin.trim();
+    }
 
     const { error: updateError } = await this.supabase.client
       .from('ops_workers')
-      .update({ name: name.trim(), phone: phone.trim() })
+      .update(updateData)
       .eq('worker_id', worker.worker_id);
 
     if (updateError) {
