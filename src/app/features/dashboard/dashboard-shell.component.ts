@@ -121,6 +121,7 @@ export class DashboardShellComponent {
     { label: 'Reports', icon: 'bar_chart', route: 'reports' },
     { label: 'Traceability', icon: 'account_tree', route: 'traceability' },
     { label: 'Alerts', icon: 'notifications_active', route: 'alerts' },
+    { label: 'Ingredients & Vendors', icon: 'category', route: 'ingredients' },
     { label: 'Users', icon: 'group', route: 'users' },
   ];
 

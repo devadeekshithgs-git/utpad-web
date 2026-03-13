@@ -24,6 +24,7 @@ export const routes: Routes = [
       { path: 'sessions', loadComponent: () => import('./features/sessions/sessions.component').then(m => m.SessionsComponent) },
       { path: 'inventory', loadComponent: () => import('./features/dashboard/inventory/inventory.component').then(m => m.InventoryComponent) },
       { path: 'reports', loadComponent: () => import('./features/dashboard/reports/reports.component').then(m => m.ReportsComponent) },
+      { path: 'ingredients', loadComponent: () => import('./features/dashboard/ingredients/ingredients.component').then(m => m.IngredientsComponent) },
     ],
   },
   { path: '**', redirectTo: '/auth/login' },
