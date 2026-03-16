@@ -14,89 +14,95 @@ interface NavItem {
   standalone: true,
   imports: [CommonModule, RouterLink, RouterLinkActive, RouterOutlet],
   styles: [`
-    .nav-item { display:flex;align-items:center;gap:10px;padding:9px 14px;border-radius:8px;text-decoration:none;color:rgba(255,255,255,0.65);font-size:14px;font-weight:500;cursor:pointer;transition:all 0.15s;white-space:nowrap;overflow:hidden; }
-    .nav-item:hover { background:rgba(255,255,255,0.08);color:rgba(255,255,255,0.9); }
-    .nav-item.active { background:#01AC51;color:#fff; }
-    .nav-item .mat-icon { font-size:20px;width:20px;height:20px;flex-shrink:0; }
+    .sidebar-link {
+      display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: 12px;
+      text-decoration: none; font-weight: 500; font-size: 14px; color: var(--muted-fg);
+      transition: all 0.2s ease; cursor: pointer;
+    }
+    .sidebar-link:hover { background: var(--secondary); color: var(--foreground); }
+    .sidebar-link:hover .link-icon { transform: scale(1.1); }
+    .sidebar-link.active { background: var(--primary-light); color: var(--primary); }
+    .sidebar-link .link-icon { font-size: 20px; width: 20px; height: 20px; transition: transform 0.2s; }
+    @media (max-width: 1023px) {
+      .sidebar-panel { transform: translateX(-100%); }
+      .sidebar-panel.open { transform: translateX(0); }
+      .main-content { margin-left: 0 !important; }
+      .mobile-topbar { display: flex !important; }
+    }
   `],
   template: `
-    <div style="display:flex;min-height:100vh;background:#f8f9fa;">
+    <div style="display:flex;min-height:100vh;background:var(--background);">
 
-      <!-- ── SIDEBAR ───────────────────────────────────── -->
-      <aside style="width:220px;min-height:100vh;background:#1a1a2e;display:flex;flex-direction:column;flex-shrink:0;position:fixed;top:0;left:0;z-index:30;"
-             [style.left]="sidebarOpen() ? '0' : '-220px'"
-             [style.transition]="'left 0.25s ease'"
-             class="sidebar-panel">
+      <!-- ── SIDEBAR ── -->
+      <aside class="sidebar-panel" [class.open]="sidebarOpen()"
+             style="width:288px;height:100vh;background:var(--sidebar-bg);border-right:1px solid var(--sidebar-border);display:flex;flex-direction:column;position:fixed;left:0;top:0;z-index:40;transition:transform 0.3s ease;box-shadow:4px 0 24px rgb(0 0 0 / 0.02);">
 
         <!-- Brand -->
-        <div style="padding:20px 16px 16px;border-bottom:1px solid rgba(255,255,255,0.07);">
-          <div style="display:flex;align-items:center;gap:10px;">
-            <div style="width:38px;height:38px;background:#01AC51;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-              <span style="color:#fff;font-family:'Cabin',sans-serif;font-weight:700;font-size:14px;">GG</span>
-            </div>
-            <div>
-              <p style="color:#fff;font-family:'Cabin',sans-serif;font-weight:700;font-size:15px;margin:0;line-height:1.2;">Gud Gum</p>
-              <p style="color:rgba(255,255,255,0.45);font-size:10px;margin:0;letter-spacing:1.5px;text-transform:uppercase;">Production Ops</p>
-            </div>
+        <div style="padding:24px;display:flex;align-items:center;gap:12px;">
+          <div style="width:40px;height:40px;border-radius:12px;background:var(--primary);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(1,172,81,0.2);flex-shrink:0;">
+            <span style="color:#fff;font-family:var(--font-display);font-weight:700;font-size:18px;">GG</span>
+          </div>
+          <div>
+            <h1 style="font-family:var(--font-display);font-weight:700;font-size:20px;color:var(--foreground);line-height:1;">Gud Gum</h1>
+            <p style="font-size:11px;color:var(--muted-fg);font-weight:500;margin-top:4px;text-transform:uppercase;letter-spacing:1.5px;">Production Ops</p>
           </div>
         </div>
 
         <!-- Nav -->
-        <nav style="flex:1;padding:12px 10px;overflow-y:auto;">
-          @for (item of navItems; track item.route) {
-            <a [routerLink]="item.route" routerLinkActive="active" class="nav-item" style="margin-bottom:2px;">
-              <span class="material-icons-round mat-icon">{{ item.icon }}</span>
-              <span>{{ item.label }}</span>
-            </a>
-          }
+        <nav style="flex:1;overflow-y:auto;padding:16px 16px;">
+          <div style="display:flex;flex-direction:column;gap:2px;">
+            @for (item of navItems; track item.route) {
+              <a [routerLink]="item.route" routerLinkActive="active" class="sidebar-link" (click)="closeSidebarOnMobile()">
+                <span class="material-icons-round link-icon">{{ item.icon }}</span>
+                <span>{{ item.label }}</span>
+              </a>
+            }
+          </div>
         </nav>
 
         <!-- User + Logout -->
-        <div style="padding:14px 10px;border-top:1px solid rgba(255,255,255,0.07);">
-          <div style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;background:rgba(255,255,255,0.05);margin-bottom:8px;">
-            <div style="width:30px;height:30px;background:#01AC51;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-              <span style="color:#fff;font-size:12px;font-weight:700;">{{ userInitial() }}</span>
-            </div>
-            <div style="flex:1;min-width:0;">
-              <p style="color:#fff;font-size:13px;font-weight:600;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ userName() }}</p>
-              <p style="color:rgba(255,255,255,0.45);font-size:11px;margin:0;">Admin</p>
-            </div>
+        <div style="padding:16px;border-top:1px solid var(--sidebar-border);">
+          <div style="padding:12px;background:var(--secondary);border-radius:12px;margin-bottom:12px;">
+            <p style="font-size:14px;font-weight:600;color:var(--foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ userName() }}</p>
+            <p style="font-size:12px;color:var(--muted-fg);text-transform:capitalize;">{{ userRole() }}</p>
           </div>
-          <button (click)="logout()" style="width:100%;padding:8px;background:#FF2828;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:opacity 0.15s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
-            <span class="material-icons-round" style="font-size:16px;">logout</span>
+          <button (click)="logout()" style="width:100%;display:flex;align-items:center;justify-content:center;gap:8px;padding:10px;border-radius:12px;font-weight:500;font-size:14px;color:var(--destructive);background:none;border:none;cursor:pointer;transition:background 0.15s;"
+                  onmouseover="this.style.background='rgba(255,40,40,0.06)'" onmouseout="this.style.background='none'">
+            <span class="material-icons-round" style="font-size:18px;">logout</span>
             Log out
           </button>
         </div>
       </aside>
 
-      <!-- Sidebar overlay (mobile) -->
+      <!-- Mobile overlay -->
       @if (sidebarOpen() && isMobile()) {
-        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:29;" (click)="sidebarOpen.set(false)"></div>
+        <div style="position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:30;" (click)="sidebarOpen.set(false)"></div>
       }
 
-      <!-- ── MAIN CONTENT ────────────────────────────── -->
-      <div style="flex:1;display:flex;flex-direction:column;margin-left:220px;" [style.marginLeft]="isMobile() ? '0' : '220px'">
+      <!-- ── MAIN CONTENT ── -->
+      <div class="main-content" style="flex:1;display:flex;flex-direction:column;margin-left:288px;">
 
-        <!-- Top bar (mobile) -->
-        <header style="display:none;background:#1a1a2e;padding:12px 16px;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20;"
-                [style.display]="isMobile() ? 'flex' : 'none'">
-          <button (click)="toggleSidebar()" style="background:none;border:none;color:#fff;cursor:pointer;display:flex;">
-            <span class="material-icons-round">menu</span>
+        <!-- Mobile top bar -->
+        <header class="mobile-topbar" style="display:none;background:#fff;padding:12px 16px;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:20;border-bottom:1px solid var(--border);box-shadow:0 1px 3px rgb(0 0 0 / 0.04);">
+          <button (click)="toggleSidebar()" style="background:none;border:none;cursor:pointer;padding:8px;border-radius:12px;display:flex;">
+            <span class="material-icons-round" style="font-size:24px;color:var(--foreground);">menu</span>
           </button>
           <div style="display:flex;align-items:center;gap:8px;">
-            <div style="width:26px;height:26px;background:#01AC51;border-radius:50%;display:flex;align-items:center;justify-content:center;">
-              <span style="color:#fff;font-size:11px;font-weight:700;">GG</span>
+            <div style="width:28px;height:28px;border-radius:8px;background:var(--primary);display:flex;align-items:center;justify-content:center;">
+              <span style="color:#fff;font-weight:700;font-size:11px;">GG</span>
             </div>
-            <span style="color:#fff;font-family:'Cabin',sans-serif;font-weight:700;font-size:14px;">Gud Gum</span>
+            <span style="font-family:var(--font-display);font-weight:700;font-size:15px;color:var(--foreground);">Gud Gum Ops</span>
           </div>
-          <button (click)="logout()" style="background:none;border:none;color:rgba(255,255,255,0.6);cursor:pointer;display:flex;">
+          <button (click)="logout()" style="background:none;border:none;cursor:pointer;padding:8px;display:flex;color:var(--muted-fg);">
             <span class="material-icons-round" style="font-size:20px;">logout</span>
           </button>
         </header>
 
         <!-- Page content -->
         <main style="flex:1;overflow-y:auto;">
-          <router-outlet />
+          <div style="max-width:1280px;margin:0 auto;padding:24px;">
+            <router-outlet />
+          </div>
         </main>
       </div>
     </div>
@@ -105,30 +111,37 @@ interface NavItem {
 export class DashboardShellComponent {
   private readonly authService = inject(AuthService);
 
-  sidebarOpen = signal(true);
+  sidebarOpen = signal(false);
 
   navItems: NavItem[] = [
-    { label: 'Dashboard',   icon: 'dashboard',          route: 'home' },
-    { label: 'Live Kanban', icon: 'view_kanban',         route: 'kanban' },
-    { label: 'Recipes',     icon: 'science',             route: 'recipes' },
-    { label: 'Inventory',   icon: 'inventory_2',         route: 'inventory' },
-    { label: 'Ingredients', icon: 'category',            route: 'ingredients' },
-    { label: 'Flavors',     icon: 'local_dining',        route: 'flavors' },
-    { label: 'Vendors',     icon: 'storefront',          route: 'vendors' },
-    { label: 'Customers',   icon: 'people',              route: 'customers' },
-    { label: 'Team',        icon: 'group',               route: 'team' },
-    { label: 'History',     icon: 'history',             route: 'history' },
+    { label: 'Dashboard',   icon: 'dashboard',       route: 'home' },
+    { label: 'Live Kanban', icon: 'view_kanban',      route: 'kanban' },
+    { label: 'Recipes',     icon: 'science',          route: 'recipes' },
+    { label: 'Inventory',   icon: 'inventory_2',      route: 'inventory' },
+    { label: 'Ingredients', icon: 'category',         route: 'ingredients' },
+    { label: 'Flavors',     icon: 'local_dining',     route: 'flavors' },
+    { label: 'Vendors',     icon: 'storefront',       route: 'vendors' },
+    { label: 'Customers',   icon: 'people',           route: 'customers' },
+    { label: 'Team',        icon: 'group',            route: 'team' },
+    { label: 'History',     icon: 'history',          route: 'history' },
+    { label: 'Bills',       icon: 'receipt_long',     route: 'bills' },
   ];
 
   userName = () => this.authService.currentUser()?.name ?? 'Admin User';
-  userInitial = () => (this.authService.currentUser()?.name ?? 'A').charAt(0).toUpperCase();
+  userRole = () => this.authService.currentUser()?.role ?? 'admin';
 
   isMobile(): boolean {
-    return window.innerWidth < 768;
+    return typeof window !== 'undefined' && window.innerWidth < 1024;
   }
 
   toggleSidebar(): void {
     this.sidebarOpen.update(v => !v);
+  }
+
+  closeSidebarOnMobile(): void {
+    if (this.isMobile()) {
+      this.sidebarOpen.set(false);
+    }
   }
 
   logout(): void {

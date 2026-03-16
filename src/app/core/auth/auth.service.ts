@@ -24,23 +24,32 @@ export class AuthService {
   readonly currentUser = this._currentUser.asReadonly();
   readonly isAuthenticated = computed(() => this._currentUser() !== null);
 
-  // Alias so interceptor can reference isAuthenticated as a function
   isAuth(): boolean {
     return this._currentUser() !== null;
   }
 
   async login(username: string, password: string): Promise<void> {
+    // Query gg_users by username (allow both admin and worker)
     const { data, error } = await this.supabase.client
       .from('gg_users')
       .select('id, username, name, role, modules, mobile_number, active, password_hash')
       .eq('username', username)
-      .eq('role', 'admin')
       .maybeSingle();
 
-    if (error) throw new Error('Database error: ' + error.message);
-    if (!data) throw new Error('Invalid credentials');
-    if (data.password_hash !== password) throw new Error('Invalid credentials');
-    if (data.active === false) throw new Error('Account is disabled');
+    if (error) {
+      console.error('[AuthService] Supabase query error:', error);
+      throw new Error('Database error. Please try again.');
+    }
+    if (!data) {
+      throw new Error('No account found with that username.');
+    }
+    // Plain text password comparison (matches seed data pattern)
+    if (data.password_hash !== password) {
+      throw new Error('Incorrect password. Please try again.');
+    }
+    if (data.active === false) {
+      throw new Error('Account is disabled. Contact your administrator.');
+    }
 
     const user: GgUser = {
       id: data.id,
